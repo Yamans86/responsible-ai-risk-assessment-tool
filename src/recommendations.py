@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from src.regulations import evaluate_regulatory_exposure
 from src.risk_rules import get_provider_profile
 
 
@@ -17,6 +18,8 @@ def generate_recommendations(assessment: dict, scores: dict, risk_level: str) ->
     provider_profile = get_provider_profile(
         assessment.get("model_provider", "Internal / no external foundation model")
     )
+    regulatory_exposure = evaluate_regulatory_exposure(assessment)
+    exposure_names = {exposure["name"] for exposure in regulatory_exposure["exposures"]}
 
     if risk_level in {"High", "Critical"}:
         recommendations.append(
@@ -25,6 +28,30 @@ def generate_recommendations(assessment: dict, scores: dict, risk_level: str) ->
     if risk_level == "Critical":
         recommendations.append(
             "Pause production launch until high-risk controls are implemented and independently reviewed."
+        )
+    if "EU AI Act" in exposure_names:
+        recommendations.append(
+            "Perform EU AI Act classification and document provider/deployer obligations, human oversight, transparency, logging, accuracy, robustness, cybersecurity, and fundamental-rights impact controls."
+        )
+    if "GDPR" in exposure_names or "UK GDPR" in exposure_names:
+        recommendations.append(
+            "Confirm lawful basis, transparency notices, data minimization, retention, data-subject rights, DPIA needs, processor contracts, and cross-border transfer safeguards."
+        )
+    if "HIPAA" in exposure_names:
+        recommendations.append(
+            "Confirm HIPAA covered-entity/business-associate status, execute BAAs with vendors that handle ePHI, and document administrative, physical, and technical safeguards."
+        )
+    if "CCPA / CPRA" in exposure_names:
+        recommendations.append(
+            "Prepare California privacy disclosures, consumer-rights intake, correction/deletion/opt-out handling, sensitive personal information controls, and service-provider contract terms."
+        )
+    if "Singapore PDPA" in exposure_names or "Thailand PDPA" in exposure_names:
+        recommendations.append(
+            "Confirm local PDPA requirements for notice, consent or lawful basis, purpose limitation, security, breach response, cross-border transfer, and data-subject rights."
+        )
+    if "US CLOUD Act" in exposure_names:
+        recommendations.append(
+            "Review Cloud Act and data-sovereignty exposure: provider jurisdiction, data residency, encryption/key control, government-access process, customer notification, and contractual challenge rights."
         )
     if cpmai.get("business_problem_unclear") or cpmai.get("ai_fit_unvalidated"):
         recommendations.append(

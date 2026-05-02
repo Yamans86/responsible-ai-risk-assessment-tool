@@ -5,6 +5,12 @@ from __future__ import annotations
 import streamlit as st
 
 from src.recommendations import generate_recommendations
+from src.regulations import (
+    CLOUD_PROVIDER_JURISDICTIONS,
+    HOST_REGION_OPTIONS,
+    REGION_OPTIONS,
+    evaluate_regulatory_exposure,
+)
 from src.risk_rules import (
     PROVIDER_PROFILES,
     classify_risk_level,
@@ -209,6 +215,72 @@ def _render_governance_inputs() -> dict:
     }
 
 
+def _render_compliance_inputs() -> dict:
+    """Collect jurisdiction, hosting, and regulatory-control inputs."""
+
+    st.subheader("Regulatory and Data Residency Inputs")
+    st.caption(
+        "These fields screen for likely regulatory exposure. They do not replace legal review."
+    )
+
+    location_col, control_col = st.columns(2)
+    with location_col:
+        organization_location = st.selectbox("Organization location", REGION_OPTIONS)
+        target_regions = st.multiselect(
+            "Affected user / data subject locations",
+            REGION_OPTIONS,
+            help="Select all locations where users, data subjects, employees, patients, or customers may be affected.",
+        )
+        data_host_region = st.selectbox("Primary data host location", HOST_REGION_OPTIONS)
+        cloud_provider_jurisdiction = st.selectbox(
+            "Cloud / hosting provider jurisdiction",
+            CLOUD_PROVIDER_JURISDICTIONS,
+            help="Cloud Act exposure is most relevant for US-controlled providers, even when data is stored outside the United States.",
+        )
+        cloud_provider_name = st.text_input(
+            "Cloud / hosting provider name",
+            placeholder="e.g. AWS, Azure, Google Cloud, local data center",
+        )
+
+    with control_col:
+        handles_phi = st.checkbox("Handles protected health information or US healthcare data")
+        handles_california_personal_information = st.checkbox(
+            "Handles California residents' personal information"
+        )
+        handles_california_sensitive_information = st.checkbox(
+            "Handles California sensitive personal information"
+        )
+        no_lawful_basis_or_notice = st.checkbox("Lawful basis, privacy notice, or consent path is not documented")
+        no_dpia_or_transfer_assessment = st.checkbox(
+            "DPIA, transfer impact assessment, or cross-border transfer mechanism is missing"
+        )
+        no_ai_act_classification = st.checkbox("EU AI Act risk classification has not been performed")
+        no_hipaa_baa = st.checkbox("HIPAA business associate agreement or PHI safeguards are missing")
+        no_consumer_rights_process = st.checkbox(
+            "Consumer/data-subject rights process is missing"
+        )
+        no_cloud_act_review = st.checkbox(
+            "Cloud Act / government-access and data-sovereignty review is missing"
+        )
+
+    return {
+        "organization_location": organization_location,
+        "target_regions": target_regions,
+        "data_host_region": data_host_region,
+        "cloud_provider_jurisdiction": cloud_provider_jurisdiction,
+        "cloud_provider_name": cloud_provider_name.strip(),
+        "handles_phi": handles_phi,
+        "handles_california_personal_information": handles_california_personal_information,
+        "handles_california_sensitive_information": handles_california_sensitive_information,
+        "no_lawful_basis_or_notice": no_lawful_basis_or_notice,
+        "no_dpia_or_transfer_assessment": no_dpia_or_transfer_assessment,
+        "no_ai_act_classification": no_ai_act_classification,
+        "no_hipaa_baa": no_hipaa_baa,
+        "no_consumer_rights_process": no_consumer_rights_process,
+        "no_cloud_act_review": no_cloud_act_review,
+    }
+
+
 def _render_cpmai_inputs() -> dict:
     """Collect CPMAI-inspired project readiness risk factors."""
 
@@ -307,6 +379,7 @@ def _render_results(assessment: dict, scores: dict) -> None:
     provider_profile = get_provider_profile(
         assessment.get("model_provider", "Internal / no external foundation model")
     )
+    regulatory_exposure = evaluate_regulatory_exposure(assessment)
     with st.expander("Provider trust profile and references", expanded=False):
         st.markdown(f"**Selected profile:** {assessment.get('model_provider')}")
         st.markdown(f"**Provider:** {provider_profile['provider']}")
@@ -328,6 +401,30 @@ def _render_results(assessment: dict, scores: dict) -> None:
                 st.markdown(f"- {reference}")
         st.caption(
             "These defaults are screening assumptions, not a legal conclusion or universal model safety ranking."
+        )
+
+    with st.expander("Regulatory exposure and data residency impact", expanded=True):
+        exposures = regulatory_exposure["exposures"]
+        if not exposures:
+            st.success("No specific regulatory exposure was triggered from the selected location, data, and hosting inputs.")
+        else:
+            st.table(
+                [
+                    {
+                        "Regulation": exposure["name"],
+                        "Data": exposure["data_points"],
+                        "Model": exposure["model_points"],
+                        "Impact": exposure["impact_points"],
+                        "Governance": exposure["governance_points"],
+                    }
+                    for exposure in exposures
+                ]
+            )
+            for exposure in exposures:
+                st.markdown(f"**{exposure['name']}**: {exposure['reason']}")
+                st.markdown(f"Reference: {exposure['reference']}")
+        st.caption(
+            "Regulatory screening is based on selected locations, data types, use case, hosting, and missing compliance controls."
         )
 
     left, right = st.columns(2)
@@ -361,6 +458,8 @@ def main() -> None:
         st.divider()
         governance_inputs = _render_governance_inputs()
         st.divider()
+        compliance_inputs = _render_compliance_inputs()
+        st.divider()
         cpmai_inputs = _render_cpmai_inputs()
 
         submitted = st.form_submit_button("Run assessment", type="primary")
@@ -372,6 +471,7 @@ def main() -> None:
             "model": model_inputs,
             "impact": impact_inputs,
             "governance": governance_inputs,
+            "compliance": compliance_inputs,
             "cpmai": cpmai_inputs,
         }
         scores = score_assessment(assessment)

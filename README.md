@@ -7,6 +7,7 @@ A Streamlit web app for performing a structured first-pass risk assessment of AI
 - Structured project intake form
 - Data, model, impact, and governance scoring
 - Provider/model trust profile scoring for OpenAI, Gemini, Claude, Azure OpenAI, self-hosted models, and unknown suppliers
+- Jurisdiction, data residency, and regulatory exposure screening for AI and privacy laws
 - CPMAI-inspired project readiness checks across business understanding, data understanding, data preparation, model evaluation, and operationalization
 - Total score out of 100
 - Risk levels: Low, Moderate, High, Critical
@@ -73,6 +74,15 @@ The tool includes additional CPMAI-inspired readiness checks derived from the su
 - Model development and evaluation: validation plans, train/validation/test strategy, drift, retraining, and generative AI controls
 - Operationalization: audit trails, production readiness, lifecycle ownership, security, and change management
 
+The tool also includes regulatory screening based on organization location, affected user/data-subject locations, data host location, and cloud-provider jurisdiction. Triggered regulations add points to the relevant risk categories and produce targeted recommendations. Current screening rules cover:
+
+- EU AI Act: high-impact AI use cases with EU/EEA exposure
+- GDPR and UK GDPR: personal data with EU/EEA or UK exposure
+- HIPAA: US healthcare or protected health information scenarios
+- CCPA / CPRA: California personal information handled by private-sector organizations
+- Singapore PDPA and Thailand PDPA: personal data with local organization, individual, or hosting exposure
+- US CLOUD Act: US-controlled cloud or hosting providers where non-US data, non-US users, or non-US hosting may be involved
+
 The category score is capped at its maximum, and the total score is classified as:
 
 | Total score | Risk level |
@@ -95,6 +105,19 @@ The provider profiles are screening assumptions based on public references. They
 - Azure OpenAI data privacy: https://learn.microsoft.com/en-us/legal/cognitive-services/openai/data-privacy
 - Anthropic commercial data processor guidance: https://support.anthropic.com/en/articles/9267385-does-anthropic-act-as-a-data-processor-or-controller
 - Stanford Foundation Model Transparency Index: https://github.com/stanford-crfm/fmti
+
+## Regulatory Screening Sources
+
+Regulatory scoring is a first-pass screening model. It does not decide legal applicability or compliance status. Confirm conclusions with qualified counsel and your privacy, security, procurement, and compliance teams.
+
+- EU AI Act: https://eur-lex.europa.eu/eli/reg/2024/1689/oj
+- GDPR territorial scope: https://gdpr-info.eu/art-3-gdpr/
+- UK GDPR guidance: https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/
+- HIPAA covered entities and business associates: https://www.hhs.gov/hipaa/for-professionals/covered-entities/index.html
+- CCPA / CPRA overview: https://oag.ca.gov/privacy/ccpa
+- Singapore PDPA obligations: https://www.pdpc.gov.sg/overview-of-pdpa/the-legislation/personal-data-protection-act/data-protection-obligations
+- Thailand PDPA reference: https://library.siam-legal.com/thai-law/personal-data-protection-act-general-provisions-sections-1-7/
+- US CLOUD Act resources: https://www.justice.gov/criminal/cloud-act-resources
 
 ## Limitations
 

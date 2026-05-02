@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from src.regulations import evaluate_regulatory_exposure
 from src.risk_rules import get_provider_profile
 
 
@@ -144,6 +145,7 @@ def score_assessment(assessment: dict) -> dict:
 
     provider_scores = calculate_provider_risk_scores(assessment)
     cpmai_scores = calculate_cpmai_scores(assessment)
+    regulatory_scores = evaluate_regulatory_exposure(assessment)["scores"]
     data_score = min(
         calculate_category_score(
             assessment.get("data", {}),
@@ -151,7 +153,8 @@ def score_assessment(assessment: dict) -> dict:
             CATEGORY_MAXIMUMS["data"],
         )
         + provider_scores["data"]
-        + cpmai_scores["data"],
+        + cpmai_scores["data"]
+        + regulatory_scores["data"],
         CATEGORY_MAXIMUMS["data"],
     )
     model_score = min(
@@ -161,7 +164,8 @@ def score_assessment(assessment: dict) -> dict:
             CATEGORY_MAXIMUMS["model"],
         )
         + provider_scores["model"]
-        + cpmai_scores["model"],
+        + cpmai_scores["model"]
+        + regulatory_scores["model"],
         CATEGORY_MAXIMUMS["model"],
     )
     impact_score = min(
@@ -170,7 +174,8 @@ def score_assessment(assessment: dict) -> dict:
             IMPACT_WEIGHTS,
             CATEGORY_MAXIMUMS["impact"],
         )
-        + cpmai_scores["impact"],
+        + cpmai_scores["impact"]
+        + regulatory_scores["impact"],
         CATEGORY_MAXIMUMS["impact"],
     )
     governance_base_score = calculate_category_score(
@@ -182,7 +187,8 @@ def score_assessment(assessment: dict) -> dict:
         governance_base_score
         + calculate_supplier_governance_score(assessment)
         + provider_scores["governance"]
-        + cpmai_scores["governance"],
+        + cpmai_scores["governance"]
+        + regulatory_scores["governance"],
         CATEGORY_MAXIMUMS["governance"],
     )
 

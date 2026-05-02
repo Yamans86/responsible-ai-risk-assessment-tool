@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from src.regulations import evaluate_regulatory_exposure
+
 
 PROVIDER_PROFILES = {
     "Internal / no external foundation model": {
@@ -127,6 +129,7 @@ def explain_detected_risks(assessment: dict, scores: dict) -> list[str]:
     governance = assessment.get("governance", {})
     cpmai = assessment.get("cpmai", {})
     provider_profile = get_provider_profile(assessment.get("model_provider", "Internal / no external foundation model"))
+    regulatory_exposure = evaluate_regulatory_exposure(assessment)
 
     if scores.get("data", 0) >= 15:
         explanations.append(
@@ -223,5 +226,7 @@ def explain_detected_risks(assessment: dict, scores: dict) -> list[str]:
         explanations.append(
             "CPMAI operationalization risk is present because production readiness, auditability, or security review is incomplete."
         )
+    for exposure in regulatory_exposure["exposures"]:
+        explanations.append(f"{exposure['name']} exposure: {exposure['reason']}")
 
     return explanations
